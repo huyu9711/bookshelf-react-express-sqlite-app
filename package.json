@@ -43,7 +43,7 @@
     "build-front": "react-scripts build",
     "eject": "react-scripts eject",
     "start-server": "nodemon server/server.js --watch server/*",
-    "start-front": "react-scripts start",
+    "start-front": "export NODE_OPTIONS=--openssl-legacy-provider && react-scripts start",
     "start": "concurrently \"npm run start-server\" \"npm run start-front\" --kill-others --kill-others-on-fail",
     "test": "react-scripts test --env=jsdom"
   },
