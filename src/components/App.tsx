@@ -28,6 +28,7 @@ interface MenuItem {
   icon?: React.ReactNode;
   children?: MenuItem[];
   label: React.ReactNode;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 function getItem(label: React.ReactNode, key: React.Key, icon?: React.ReactNode, children?: MenuItem[]): MenuItem {
@@ -49,6 +50,12 @@ const items: MenuItem[] = [
   ]),
   getItem('Team', 'sub2', <TeamOutlined />, [getItem('Team 1', '6'), getItem('Team 2', '8')]),
   getItem('Files', '9', <FileOutlined />),
+];
+
+const menuItems = [
+  { key: 'home', label: 'Home' },
+  { key: 'about', label: 'About', onClick: () => console.log('About clicked') },
+  { key: 'contact', label: 'Contact', onClick: () => console.log('Contact clicked') },
 ];
 
 const App: React.FC = () => {
@@ -100,7 +107,7 @@ const App: React.FC = () => {
       <Layout>
         <Sider theme='light' collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)} style={{background: colorBgContainer, borderRadius: borderRadiusLG}}>
           <div className="demo-logo-vertical" />
-          <Menu theme="light" defaultSelectedKeys={['1']} mode="inline" items={items} />
+          <Menu theme="light" defaultSelectedKeys={['1']} mode="inline" items={menuItems} />
         </Sider>
         <Layout>
           <Content style={{ margin: '0 16px' }}>
