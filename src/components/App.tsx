@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 
 import {
-  DesktopOutlined,
-  PieChartOutlined,
   UpOutlined,
   DownOutlined,
+  MenuUnfoldOutlined,
+  MenuFoldOutlined
 } from '@ant-design/icons';
-import { Layout, Menu, theme, Button, Form, Input } from 'antd';
+import { Layout, theme, Button, Form} from 'antd';
 import PriceForm from './PriceForm';
 import ProjectTreeComponent from './ProjectTreeComponent';
+import ProjectMenuComponent from './ProjectMenuComponent';
 import {Bookshelf} from './bookshelf';
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -43,6 +44,10 @@ const App: React.FC = () => {
     setIsCollapsed(!isCollapsed);
   };
 
+  const toggleSiderCollapse = () => {
+    setCollapsed(!collapsed);
+  };
+
   const handleAdd = () => {
     form.validateFields().then(values => {
       const newData: DataSourceItem = {
@@ -68,16 +73,25 @@ const App: React.FC = () => {
       </Header>
       <Layout>
         <Sider theme='light' collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)} style={{background: colorBgContainer, borderRadius: borderRadiusLG}}>
-          <div className="demo-logo-vertical" />
-          <ProjectTreeComponent />
+          <div className="demo-logo-vertical" />      
+          {/* <ProjectTreeComponent collapsed={collapsed}/> */}
+          <ProjectMenuComponent collapsed={false} />
         </Sider>
+        {/* {!collapsed && (
+        <Sider theme='light'>
+          <ProjectTreeComponent collapsed={false}/>
+        </Sider>
+        )}
+        <div>
+          <Button type="primary" onClick={toggleSiderCollapse} icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}>
+          </Button>
+        </div> */}
         <Layout>
           <Content style={{ margin: '0 16px' }}>
             <Bookshelf />
           </Content>
           <Footer style={{ padding: 10, textAlign: 'center' }}>
             <Button type="text" onClick={toggleCollapse} icon={isCollapsed ? <UpOutlined /> : <DownOutlined />}>
-              {isCollapsed ? 'Show' : 'Hide'}
             </Button>
             {!isCollapsed && (
               <div>
@@ -90,7 +104,7 @@ const App: React.FC = () => {
               </div> 
             )}
           </Footer>
-        </Layout>
+        </Layout>m
       </Layout>
     </Layout>
   );

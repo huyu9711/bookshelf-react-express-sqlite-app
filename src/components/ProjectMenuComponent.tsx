@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Tree, Dropdown, Menu, Modal, Form, Input, Button } from 'antd';
-import { DataNode } from 'antd/lib/tree';
+import { Menu, Dropdown, Modal, Form, Input, Button } from 'antd';
 import { DownOutlined, DesktopOutlined } from '@ant-design/icons';
 
 interface NodeData {
@@ -13,27 +12,34 @@ const initialData: NodeData[] = [
   { title: 'Root Node', key: '0-0', children: [] }
 ];
 
-interface ProjectTreeComponentProps {
+interface ProjectMenuComponentProps {
   collapsed: boolean;
 }
 
-const ProjectTreeComponent: React.FC<ProjectTreeComponentProps> = ({ collapsed }) => {
+const ProjectMenuComponent: React.FC<ProjectMenuComponentProps> = ({ collapsed }) => {
   const [treeData, setTreeData] = useState<NodeData[]>(initialData);
   const [filteredData, setFilteredData] = useState<NodeData[]>(initialData);
   const [searchValue, setSearchValue] = useState('');
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'add' | 'rename'>('add');
-  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
-  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [form] = Form.useForm();
 
-  // Handle right-click on a tree node
-  const onRightClick = ({ node }: any) => {
-    setSelectedNode(node);
+  const onMenuItemSelected = (key: string) => {
+    const findNode = (nodes: NodeData[], key: string): NodeData | null => {
+      for (const node of nodes) {
+        if (node.key === key) return node;
+        if (node.children) {
+          const found = findNode(node.children, key);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    setSelectedNode(findNode(treeData, key));
   };
 
-  // Show modal for adding or renaming a node
   const showModal = (type: 'add' | 'rename') => {
     setModalType(type);
     setIsModalVisible(true);
@@ -42,7 +48,6 @@ const ProjectTreeComponent: React.FC<ProjectTreeComponentProps> = ({ collapsed }
     }
   };
 
-  // Handle modal OK button click
   const handleOk = () => {
     form.validateFields().then(values => {
       if (selectedNode) {
@@ -63,7 +68,6 @@ const ProjectTreeComponent: React.FC<ProjectTreeComponentProps> = ({ collapsed }
           const newTreeData = updateTree(treeData);
           setTreeData(newTreeData);
           setFilteredData(newTreeData);
-          setExpandedKeys([...expandedKeys, selectedNode.key]);
           setSelectedKeys([newKey]);
         } else if (modalType === 'rename') {
           const updateTree = (nodes: NodeData[]): NodeData[] => {
@@ -87,12 +91,10 @@ const ProjectTreeComponent: React.FC<ProjectTreeComponentProps> = ({ collapsed }
     });
   };
 
-  // Handle modal cancel button click
   const handleCancel = () => {
     setIsModalVisible(false);
   };
 
-  // Handle node deletion
   const handleDelete = () => {
     if (selectedNode) {
       const deleteNode = (nodes: NodeData[]): NodeData[] => {
@@ -107,63 +109,6 @@ const ProjectTreeComponent: React.FC<ProjectTreeComponentProps> = ({ collapsed }
     }
   };
 
-  // Handle node drag and drop
-  const onDrop = (info: any) => {
-    const dropKey = info.node.key;
-    const dragKey = info.dragNode.key;
-    const dropPos = info.node.pos.split('-');
-    const dropPosition = info.dropPosition - Number(dropPos[dropPos.length - 1]);
-
-    const loop = (data: NodeData[], key: string, callback: (node: NodeData, i: number, data: NodeData[]) => void) => {
-      for (let i = 0; i < data.length; i++) {
-        if (data[i].key === key) {
-          return callback(data[i], i, data);
-        }
-        if (data[i].children) {
-          loop(data[i].children!, key, callback);
-        }
-      }
-    };
-
-    const data = [...treeData];
-
-    let dragObj: NodeData;
-    loop(data, dragKey, (item, index, arr) => {
-      arr.splice(index, 1);
-      dragObj = item;
-    });
-
-    if (!info.dropToGap) {
-      loop(data, dropKey, (item) => {
-        item.children = item.children || [];
-        item.children.push(dragObj!);
-      });
-    } else if (
-      (info.node.children || []).length > 0 && info.node.expanded && dropPosition === 1
-    ) {
-      loop(data, dropKey, (item) => {
-        item.children = item.children || [];
-        item.children.unshift(dragObj!);
-      });
-    } else {
-      let ar: NodeData[] = [];
-      let i: number;
-      loop(data, dropKey, (item, index, arr) => {
-        ar = arr;
-        i = index;
-      });
-      if (dropPosition === -1) {
-        ar.splice(i!, 0, dragObj!);
-      } else {
-        ar.splice(i! + 1, 0, dragObj!);
-      }
-    }
-
-    setTreeData(data);
-    setFilteredData(data);
-  };
-
-  // Handle search input change
   const onSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
     setSearchValue(value);
@@ -191,10 +136,8 @@ const ProjectTreeComponent: React.FC<ProjectTreeComponentProps> = ({ collapsed }
     };
 
     setFilteredData(filterTree(treeData));
-    setExpandedKeys(value ? filteredData.map(node => node.key) : []);
   };
 
-  // Context menu for tree nodes
   const menu = (
     <Menu>
       <Menu.Item onClick={() => showModal('add')}>
@@ -209,19 +152,24 @@ const ProjectTreeComponent: React.FC<ProjectTreeComponentProps> = ({ collapsed }
     </Menu>
   );
 
-  // Render tree nodes
-  const renderTreeNodes = (data: NodeData[]): DataNode[] => {
-    return data.map(item => ({
-      title: collapsed ? null : item.title,
-      key: item.key,
-      icon: <DesktopOutlined />,
-      children: item.children ? renderTreeNodes(item.children) : [],
-    }));
-  };
-
-  // Render expanded keys based on collapsed state
-  const renderExpandKeys = () => {
-    return collapsed ? [] : expandedKeys;
+  const renderMenuItems = (data: NodeData[]): React.ReactNode[] => {
+    return data.map(item => (
+      <Menu.SubMenu
+        key={item.key}
+        title={collapsed ? null : item.title}
+        icon={<DesktopOutlined />}
+        onTitleClick={() => {
+          setSelectedKeys([item.key]);
+        }}
+        onTitleMouseEnter={() => {
+          if (item.key) {
+            onMenuItemSelected(item.key);
+          }          
+        }}
+      >
+        {item.children ? renderMenuItems(item.children) : null}
+      </Menu.SubMenu>
+    ));
   };
 
   return (
@@ -233,18 +181,26 @@ const ProjectTreeComponent: React.FC<ProjectTreeComponentProps> = ({ collapsed }
         style={{ marginBottom: 8 }}
       />
       <Dropdown overlay={menu} trigger={['contextMenu']}>
-        <Tree
-          showIcon
-          treeData={renderTreeNodes(filteredData)}
-          onRightClick={onRightClick}
-          expandedKeys={renderExpandKeys()}
-          onExpand={setExpandedKeys}
-          selectedKeys={selectedKeys}
-          onSelect={setSelectedKeys}
-          draggable
-          onDrop={onDrop}
-          switcherIcon={<DownOutlined />}
-        />
+        <div
+          onContextMenu={(e) => {
+            e.preventDefault();
+            const key = (e.target as HTMLElement).closest('.ant-menu-submenu')?.getAttribute('data-menu-id');
+            // if (key) {
+            //   onMenuItemSelected(key);
+            // }
+            console.log(key);
+          }}
+        >
+          <Menu
+            mode="inline"
+            selectedKeys={selectedKeys}
+            onClick={({ key }) => {
+              setSelectedKeys([key as string])
+            }}
+          >
+            {renderMenuItems(filteredData)}
+          </Menu>
+        </div>
       </Dropdown>
       <Modal title={modalType === 'add' ? "新建节点" : "重命名节点"} visible={isModalVisible} onOk={handleOk} onCancel={handleCancel}>
         <Form form={form} layout="vertical">
@@ -257,4 +213,4 @@ const ProjectTreeComponent: React.FC<ProjectTreeComponentProps> = ({ collapsed }
   );
 };
 
-export default ProjectTreeComponent;
+export default ProjectMenuComponent;
